@@ -1,0 +1,20 @@
+0: Qué pasó ayer 
+0: El gran Lebowski
+0: Loca academia de policía 
+0: La vida de Brian
+0: El diablo viste a la moda
+0: Amélie 
+0: Súper empollonas 
+0: Toc Toc 
+0: El reportero: La leyenda de Ron Burgundy 
+0: Los fantasmas atacan al jefe 
+1: El exorcista
+1: El conjuro
+1: La noche de Halloween
+1: El resplandor
+1: Psicosis
+1: El laberinto del fauno
+1: El orfanato
+1: La maldición
+1: El proyecto de la bruja de Blair
+1: REC

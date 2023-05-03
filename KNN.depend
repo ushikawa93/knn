@@ -1,0 +1,7 @@
+# depslib dependency file v1.0
+1683093568 source:g:\mi unidad\01-programacion\practicasresueltas\knn\knn\main.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<math.h>
+
