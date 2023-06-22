@@ -3,22 +3,26 @@
 #include <string.h>
 #include <math.h>
 
-#define N_diccionario 9382
+#define N_diccionario 108788
 #define N_palabra 20
-#define N_oracion 100
-#define N_entrenamiento 40
+#define N_oracion 150
+#define N_entrenamiento 100
+#define N_classify 20
 #define Imprimir 0
 
 // Inicializacion de diccionario y set de entrenamiento:
 int InitDiccionario(char diccionario [N_diccionario][N_palabra]);
 void InitTraining(char training_set[N_entrenamiento][N_oracion],int vector_tipos [N_entrenamiento]);
 
+// Inicializacion de frases a clasificar:
+void InitClassifySet(char classify_set[N_classify][N_oracion],int vector_tipos_classify[N_classify]);
+
 // Funciones para manipular los vectores
 int ObtenerCaracteristicas(char diccionario [N_diccionario][N_palabra], char oracion[], float vector_caracteristicas[], int tipo, int imprimir);
 void ImprimirVectorCaracteristicas(char diccionario [N_diccionario][N_palabra],char oracion[],float vector_caracteristicas[],int tipo);
 int decision_final(int vector_tipos[N_entrenamiento] ,int K);
 void obtener_vector_distancias ( char nueva_oracion [N_oracion] , float vector_caracteristicas [N_entrenamiento][N_diccionario] , char diccionario [N_diccionario][N_palabra] , float distancias [N_entrenamiento] , int imprimir_caracteristicas);
-void ordenar_traning_set(float vector_distancias[], char training_set [N_entrenamiento][N_oracion],int vector_tipos[N_entrenamiento], int N);
+void ordenar_training_set(float vector_distancias[], char training_set [N_entrenamiento][N_oracion],int vector_tipos[N_entrenamiento],float vector_caracteristicas[N_entrenamiento][N_diccionario],  int N);
 
 
 // Funciones auxiliares
@@ -28,21 +32,27 @@ float calcular_distancia(float vector1[],float vector2[],int dimension);
 int strstr_custom(char cadena[],char palabra[]);
 
 
+// Declaracion de arreglos (globales para que le asignen mas espacio)
+char diccionario [N_diccionario][N_palabra]={0};
+char training_set [N_entrenamiento][N_oracion]={0};
+float vector_caracteristicas[N_entrenamiento][N_diccionario]={0};
+int vector_tipos [N_entrenamiento]={0};
+
+char classify_set[N_classify][N_oracion]={0};
+int vector_tipos_classify[N_classify]={0};
+
+char nueva_oracion [N_oracion];
+float vector_distancias [N_entrenamiento];
+
 
 int main()
 {
     char T0 [N_palabra] = "La Renga";
-    char T1 [N_palabra] = "Callejeros";
+    char T1 [N_palabra] = "Charly";
 
     int K = 5;
     int i;
-    char diccionario [N_diccionario][N_palabra]={0};
-    char training_set [N_entrenamiento][N_oracion]={0};
-    float vector_caracteristicas[N_entrenamiento][N_diccionario]={0};
-    int vector_tipos [N_entrenamiento]={0};
 
-    char nueva_oracion [N_oracion];
-    float vector_distancias [N_entrenamiento];
 
     InitDiccionario(diccionario);
     InitTraining(training_set,vector_tipos);
@@ -52,35 +62,73 @@ int main()
         ObtenerCaracteristicas(diccionario,training_set[i],vector_caracteristicas[i],vector_tipos[i],Imprimir);
     }
 
-    char opcion;
+    printf("Bienvenido al programa de clasificación de canciones con KNN\n");
+    int seleccion;
     do{
+        printf("1) Testear las frases del conjunto de prueba \n");
+        printf("2) Ingresar nueva frase \n");
+        printf("3) Salir \n");
 
-        system("cls");
-        printf("Ingrese una nueva oracion: \n");
-        gets( nueva_oracion );
 
-        obtener_vector_distancias(nueva_oracion,vector_caracteristicas,diccionario,vector_distancias,Imprimir);
+        scanf("%d",&seleccion);fflush(stdin);
 
-        ordenar_traning_set(vector_distancias,training_set,vector_tipos,N_entrenamiento);
-
-        int tipo_nueva_muestra = decision_final(vector_tipos,K);
-
-        printf("\n--- Los %d elementos mas cercanos son: ---\n",K);
-
-        for (int i = 0;i<K; i++)
+        switch(seleccion)
         {
-            printf("%s -> Tipo: %s (distancia %f)\n",training_set[i],(vector_tipos[i]==0) ? T0:T1,vector_distancias[i]);
+            case 1:
+
+                InitClassifySet(classify_set,vector_tipos_classify);
+                int clasificaciones_correctas =0;
+                int clasificaciones_incorrectas =0;
+
+                for(i=0;i<N_classify;i++)
+                {
+
+
+                    obtener_vector_distancias(classify_set[i],vector_caracteristicas,diccionario,vector_distancias,Imprimir);
+
+                    ordenar_training_set(vector_distancias,training_set,vector_tipos,vector_caracteristicas,N_entrenamiento);
+
+                    int tipo_nueva_muestra = decision_final(vector_tipos,K);
+
+
+                    if(tipo_nueva_muestra != vector_tipos_classify[i]){
+                      printf("\nFrase: %s de tipo %s \n",classify_set[i],(vector_tipos_classify[i]==0)?T0:T1);
+                      printf("---- Clasifico esta muestra como: %s ---- \n",(tipo_nueva_muestra==0)? T0:T1);
+                      clasificaciones_incorrectas++;
+
+                    }
+                    else
+                    {
+                        clasificaciones_correctas++;
+                    }
+
+                }
+                printf("Clasificaciones correctas: %d\n Clasificaciones incorrectas: %d\n" , clasificaciones_correctas, clasificaciones_incorrectas );
+                break;
+
+            case 2:
+                printf("Ingrese una nueva oracion: \n");
+                gets( nueva_oracion );
+
+                obtener_vector_distancias(nueva_oracion,vector_caracteristicas,diccionario,vector_distancias,Imprimir);
+
+                ordenar_training_set(vector_distancias,training_set,vector_tipos,vector_caracteristicas,N_entrenamiento);
+
+                int tipo_nueva_muestra = decision_final(vector_tipos,K);
+
+                printf("\n--- Los %d elementos mas cercanos son: ---\n",K);
+
+                for (int i = 0;i<K; i++)
+                {
+                    printf("%s -> Tipo: %s (distancia %f)\n",training_set[i],(vector_tipos[i]==0) ? T0:T1,vector_distancias[i]);
+                }
+
+                printf("\n ---- Clasifico esta nueva muestra como: %s ---- \n",(tipo_nueva_muestra==0)? T0:T1);
+                break;
+            case 3:
+                break;
         }
-
-        printf("\n ---- Clasifico esta nueva muestra como: %s ----",(tipo_nueva_muestra==0)? T0:T1);
-
-        printf("¿Otra? (s/n)\n");
-        scanf("%c",&opcion);fflush(stdin);
-
-    }while(opcion == 's');
-
-
-
+    }while(seleccion != 3);
 
     return 0;
 }
@@ -88,7 +136,7 @@ int main()
 int InitDiccionario(char diccionario [N_diccionario][N_palabra])
 {
     FILE* manejador_archivo;
-    if((manejador_archivo=fopen("diccionario_medio.txt","r")) == NULL){
+    if((manejador_archivo=fopen("Diccionario.txt","r")) == NULL){
         printf("Error al abrir el archivo");
         return 1;
     }
@@ -109,7 +157,7 @@ int InitDiccionario(char diccionario [N_diccionario][N_palabra])
 void InitTraining(char training_set[N_entrenamiento][N_oracion],int vector_tipos [N_entrenamiento])
 {
     FILE* manejador_archivo;
-    if((manejador_archivo=fopen("la_renga.txt","r")) == NULL){
+    if((manejador_archivo=fopen("la_renga_training.txt","r")) == NULL){
         printf("Error al abrir el archivo");
     }
     rewind(manejador_archivo);
@@ -128,7 +176,7 @@ void InitTraining(char training_set[N_entrenamiento][N_oracion],int vector_tipos
     fclose(manejador_archivo);
 
 
-    if((manejador_archivo=fopen("callejeros.txt","r")) == NULL){
+    if((manejador_archivo=fopen("charly_training.txt","r")) == NULL){
         printf("Error al abrir el archivo");
     }
     rewind(manejador_archivo);
@@ -139,6 +187,44 @@ void InitTraining(char training_set[N_entrenamiento][N_oracion],int vector_tipos
         oracion[strcspn(oracion, "\n")] = 0;    // Aca le saco el salto de linea que mete el fgets (no se si sera necesario)
         strcpy(training_set[index],oracion);
         vector_tipos [index] = 1;
+        index++;
+    }
+
+}
+
+void InitClassifySet(char classify_set[N_classify][N_oracion],int vector_tipos_classify[N_classify])
+{
+    FILE* manejador_archivo;
+    if((manejador_archivo=fopen("la_renga_classify.txt","r")) == NULL){
+        printf("Error al abrir el archivo");
+    }
+    rewind(manejador_archivo);
+
+    char oracion [N_oracion];
+    int index = 0;
+
+    while (index < N_classify/2)
+    {
+        fgets(oracion,N_oracion,manejador_archivo);
+        oracion[strcspn(oracion, "\n")] = 0;    // Aca le saco el salto de linea que mete el fgets (no se si sera necesario)
+        strcpy(classify_set[index],oracion);
+        vector_tipos_classify [index] = 0;
+        index++;
+    }
+    fclose(manejador_archivo);
+
+
+    if((manejador_archivo=fopen("charly_classify.txt","r")) == NULL){
+        printf("Error al abrir el archivo");
+    }
+    rewind(manejador_archivo);
+
+    while (index < N_classify)
+    {
+        fgets(oracion,N_oracion,manejador_archivo);
+        oracion[strcspn(oracion, "\n")] = 0;    // Aca le saco el salto de linea que mete el fgets (no se si sera necesario)
+        strcpy(classify_set[index],oracion);
+        vector_tipos_classify [index] = 1;
         index++;
     }
 
@@ -191,7 +277,7 @@ void obtener_vector_distancias ( char nueva_oracion [N_oracion] , float vector_c
 
 }
 
-void ordenar_traning_set(float vector_distancias[], char training_set [N_entrenamiento][N_oracion],int vector_tipos[N_entrenamiento], int N) {
+void ordenar_training_set(float vector_distancias[], char training_set [N_entrenamiento][N_oracion],int vector_tipos[N_entrenamiento],float vector_caracteristicas[N_entrenamiento][N_diccionario], int N) {
     int i, j;
     float temp;
     char temp_str[N_oracion];
@@ -199,7 +285,8 @@ void ordenar_traning_set(float vector_distancias[], char training_set [N_entrena
     for (i = 0; i < N-1; i++) {
         for (j = 0; j < N-i-1; j++) {
             if (vector_distancias[j] > vector_distancias[j+1]) {
-                // intercambio los elementos en el arreglo de floats
+
+                // intercambio los elementos en el arreglo de distancias
                 temp = vector_distancias[j];
                 vector_distancias[j] = vector_distancias[j+1];
                 vector_distancias[j+1] = temp;
@@ -213,6 +300,24 @@ void ordenar_traning_set(float vector_distancias[], char training_set [N_entrena
                 temp_int = vector_tipos[j];
                 vector_tipos[j]=vector_tipos[j+1];
                 vector_tipos[j+1]=temp_int;
+
+                // intercambio elementos en el arreglo de caracteristicas (para que siga estando todo ordenado):
+                int k;
+                float caracteristicas_temp [N_diccionario];
+                for (k =0;k< N_diccionario;k++)
+                {
+                    caracteristicas_temp[k] = vector_caracteristicas[j][k];
+                }
+                for (k =0;k< N_diccionario;k++)
+                {
+                    vector_caracteristicas[j][k] = vector_caracteristicas[j+1][k];
+                }
+                for (k =0;k< N_diccionario;k++)
+                {
+                    vector_caracteristicas[j+1][k] = caracteristicas_temp[k];
+                }
+
+
 
             }
         }
@@ -329,6 +434,7 @@ float calcular_norma(float vector[],int dimension)
     }
     return sqrt(norma);
 }
+
 
 
 
