@@ -1,3 +1,70 @@
+/****************************************************
+ * Programa de Clasificación de Canciones con KNN
+ *
+ * Descripción general:
+ * --------------------
+ * Este programa implementa un clasificador de frases
+ * (canciones, letras o expresiones cortas) utilizando
+ * el algoritmo K-Nearest Neighbors (KNN).
+ *
+ * Flujo principal:
+ * ----------------
+ * 1. Inicializa un diccionario de palabras (vector de vocabulario).
+ * 2. Inicializa el conjunto de entrenamiento (frases y sus tipos).
+ * 3. Calcula los vectores de características de cada frase
+ *    del set de entrenamiento en función del diccionario.
+ * 4. Ofrece un menú al usuario:
+ *      - Testear el clasificador con un conjunto de prueba.
+ *      - Ingresar una nueva frase para clasificar.
+ *      - Salir del programa.
+ *
+ * Constantes principales:
+ * -----------------------
+ *  N_diccionario   : Cantidad máxima de palabras en el diccionario.
+ *  N_palabra       : Longitud máxima de cada palabra.
+ *  N_oracion       : Longitud máxima de cada oración.
+ *  N_entrenamiento : Cantidad de frases en el set de entrenamiento.
+ *  N_classify      : Cantidad de frases en el set de prueba.
+ *  Imprimir        : Bandera para mostrar o no características.
+ *
+ * Funciones declaradas:
+ * ---------------------
+ *  - InitDiccionario(...)               : Inicializa el diccionario.
+ *  - InitTraining(...)                  : Inicializa set de entrenamiento.
+ *  - InitClassifySet(...)               : Inicializa set de prueba.
+ *  - ObtenerCaracteristicas(...)        : Genera vector de características
+ *                                         para una frase.
+ *  - ImprimirVectorCaracteristicas(...) : Debug de características.
+ *  - decision_final(...)                : Determina clase según vecinos K.
+ *  - obtener_vector_distancias(...)     : Calcula distancias a set entrenado.
+ *  - ordenar_training_set(...)          : Ordena frases de entrenamiento por distancia.
+ *  - calcular_norma(...)                : Calcula norma de un vector.
+ *  - normalizar_vector(...)             : Normaliza vector de características.
+ *  - calcular_distancia(...)            : Distancia entre dos vectores.
+ *  - strstr_custom(...)                 : Función auxiliar para buscar subcadenas.
+ *
+ * Arreglos globales:
+ * ------------------
+ *  - diccionario[][]            : Contiene palabras del vocabulario.
+ *  - training_set[][]           : Frases de entrenamiento.
+ *  - vector_caracteristicas[][] : Características de cada frase entrenada.
+ *  - vector_tipos[]             : Tipo/clase de cada frase (ej: banda/artista).
+ *  - classify_set[][]           : Frases del conjunto de prueba.
+ *  - vector_tipos_classify[]    : Tipos reales del set de prueba.
+ *  - nueva_oracion[]            : Buffer para nuevas frases ingresadas.
+ *  - vector_distancias[]        : Distancias de la frase actual al set entrenado.
+ *
+ * main():
+ * -------
+ *  - Define etiquetas de tipo (ej: "La Renga", "Charly").
+ *  - Inicializa diccionario y set de entrenamiento.
+ *  - Genera vectores de características para entrenamiento.
+ *  - Ejecuta un menú interactivo para clasificar frases.
+ *
+ ****************************************************/
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -62,7 +129,7 @@ int main()
         ObtenerCaracteristicas(diccionario,training_set[i],vector_caracteristicas[i],vector_tipos[i],Imprimir);
     }
 
-    printf("Bienvenido al programa de clasificaci�n de canciones con KNN\n");
+    printf("Bienvenido al programa de clasificaci�n de canciones con KNN\n");
     int seleccion;
     do{
         printf("1) Testear las frases del conjunto de prueba \n");
@@ -133,6 +200,17 @@ int main()
     return 0;
 }
 
+/****************************************************
+ * Función: InitDiccionario
+ * ------------------------
+ * Carga el diccionario de palabras desde el archivo
+ * "Diccionario.txt" en la matriz diccionario[].
+ *
+ * Retorna:
+ *   0 si se cargó correctamente,
+ *   1 si hubo error al abrir el archivo.
+ ****************************************************/
+
 int InitDiccionario(char diccionario [N_diccionario][N_palabra])
 {
     FILE* manejador_archivo;
@@ -153,6 +231,24 @@ int InitDiccionario(char diccionario [N_diccionario][N_palabra])
 
     return 0;
 }
+
+/****************************************************
+ * Función: InitTraining
+ * ---------------------
+ * Carga el conjunto de entrenamiento desde los
+ * archivos "la_renga_training.txt" y 
+ * "charly_training.txt".
+ *
+ * Parámetros:
+ *  - training_set[N_entrenamiento][N_oracion] :
+ *      Matriz donde se almacenan las frases leídas.
+ *  - vector_tipos[N_entrenamiento] :
+ *      Vector con la clase de cada frase:
+ *        0 = La Renga, 1 = Charly.
+ *
+ * Retorno:
+ *  - void (no retorna valor).
+ ****************************************************/
 
 void InitTraining(char training_set[N_entrenamiento][N_oracion],int vector_tipos [N_entrenamiento])
 {
@@ -192,6 +288,34 @@ void InitTraining(char training_set[N_entrenamiento][N_oracion],int vector_tipos
 
 }
 
+
+/****************************************************
+ * Función: InitClassifySet
+ * ------------------------
+ * Inicializa el conjunto de frases a clasificar (set de prueba)
+ * y el vector con sus clases correspondientes.
+ *
+ * Parámetros:
+ *  - classify_set[N_classify][N_oracion] :
+ *      Matriz donde se guardan las frases leídas desde archivos.
+ *  - vector_tipos_classify[N_classify] :
+ *      Vector que indica el tipo (clase) de cada frase:
+ *          0 -> Frase de "La Renga"
+ *          1 -> Frase de "Charly"
+ *
+ * Descripción:
+ *  1. Abre el archivo "la_renga_classify.txt" y lee N_classify/2 frases.
+ *     Cada frase se guarda en classify_set y se etiqueta con tipo 0.
+ *  2. Abre el archivo "charly_classify.txt" y lee las frases restantes,
+ *     que se etiquetan con tipo 1.
+ *  3. Se eliminan los saltos de línea generados por fgets().
+ *
+ * Notas:
+ *  - Si los archivos no existen, imprime un error en consola.
+ *  - No hay control de overflow: se asume que los archivos
+ *    contienen la cantidad esperada de frases.
+ ****************************************************/
+
 void InitClassifySet(char classify_set[N_classify][N_oracion],int vector_tipos_classify[N_classify])
 {
     FILE* manejador_archivo;
@@ -230,6 +354,30 @@ void InitClassifySet(char classify_set[N_classify][N_oracion],int vector_tipos_c
 
 }
 
+/****************************************************
+ * Función: ObtenerCaracteristicas
+ * -------------------------------
+ * Genera el vector de características de una oración
+ * a partir del diccionario de palabras.
+ *
+ * Parámetros:
+ *  - diccionario[N_diccionario][N_palabra] :
+ *      Lista de palabras que conforman el vocabulario.
+ *  - oracion[] :
+ *      Cadena con la frase a analizar.
+ *  - vector_caracteristicas[] :
+ *      Vector de salida con las características
+ *      (aparición de cada palabra del diccionario).
+ *  - tipo :
+ *      Clase asociada a la oración (0 = La Renga,
+ *      1 = Charly).
+ *  - imprimir :
+ *      Si es 1, muestra el vector generado.
+ *
+ * Retorno:
+ *  - 0 en todos los casos (éxito).
+ ****************************************************/
+
 int ObtenerCaracteristicas(char diccionario [N_diccionario][N_palabra], char oracion[], float vector_caracteristicas[], int tipo, int imprimir)
 {
     int index;
@@ -249,6 +397,27 @@ int ObtenerCaracteristicas(char diccionario [N_diccionario][N_palabra], char ora
     return 0;
 }
 
+/****************************************************
+ * Función: ImprimirVectorCaracteristicas
+ * --------------------------------------
+ * Muestra en pantalla el vector de características
+ * asociado a una oración.
+ *
+ * Parámetros:
+ *  - diccionario[N_diccionario][N_palabra] :
+ *      Palabras del vocabulario.
+ *  - oracion[] :
+ *      Frase analizada.
+ *  - vector_caracteristicas[] :
+ *      Vector de características normalizado.
+ *  - tipo :
+ *      Clase de la oración (0 = La Renga,
+ *      1 = Charly).
+ *
+ * Retorno:
+ *  - void (no retorna valor).
+ ****************************************************/
+
 void ImprimirVectorCaracteristicas(char diccionario [N_diccionario][N_palabra],char oracion[],float vector_caracteristicas[],int tipo)
 {
     int i;
@@ -263,6 +432,28 @@ void ImprimirVectorCaracteristicas(char diccionario [N_diccionario][N_palabra],c
     }
 }
 
+/****************************************************
+ * Función: obtener_vector_distancias
+ * ----------------------------------
+ * Calcula las distancias entre una nueva oración
+ * y todas las frases del set de entrenamiento.
+ *
+ * Parámetros:
+ *  - nueva_oracion[N_oracion] :
+ *      Frase ingresada para clasificar.
+ *  - vector_caracteristicas[N_entrenamiento][N_diccionario] :
+ *      Vectores de características de entrenamiento.
+ *  - diccionario[N_diccionario][N_palabra] :
+ *      Palabras del vocabulario.
+ *  - distancias[N_entrenamiento] :
+ *      Vector de salida con las distancias calculadas.
+ *  - imprimir_caracteristicas :
+ *      Si es 1, imprime el vector de características
+ *      de la nueva oración.
+ *
+ * Retorno:
+ *  - void (no retorna valor).
+ ****************************************************/
 
 void obtener_vector_distancias ( char nueva_oracion [N_oracion] , float vector_caracteristicas [N_entrenamiento][N_diccionario] , char diccionario [N_diccionario][N_palabra] , float distancias [N_entrenamiento] ,int imprimir_caracteristicas)
 {
@@ -276,6 +467,30 @@ void obtener_vector_distancias ( char nueva_oracion [N_oracion] , float vector_c
     }
 
 }
+
+
+/****************************************************
+ * Función: ordenar_training_set
+ * ------------------------------
+ * Ordena el conjunto de entrenamiento y sus vectores
+ * asociados según las distancias crecientes a una
+ * nueva oración.
+ *
+ * Parámetros:
+ *  - vector_distancias[] :
+ *      Distancias entre la nueva oración y el set.
+ *  - training_set[N_entrenamiento][N_oracion] :
+ *      Frases del set de entrenamiento.
+ *  - vector_tipos[N_entrenamiento] :
+ *      Clases de cada frase (0 = La Renga, 1 = Charly).
+ *  - vector_caracteristicas[N_entrenamiento][N_diccionario] :
+ *      Vectores de características del entrenamiento.
+ *  - N :
+ *      Cantidad de frases a ordenar.
+ *
+ * Retorno:
+ *  - void (no retorna valor).
+ ****************************************************/
 
 void ordenar_training_set(float vector_distancias[], char training_set [N_entrenamiento][N_oracion],int vector_tipos[N_entrenamiento],float vector_caracteristicas[N_entrenamiento][N_diccionario], int N) {
     int i, j;
@@ -324,6 +539,25 @@ void ordenar_training_set(float vector_distancias[], char training_set [N_entren
     }
 }
 
+
+/****************************************************
+ * Función: decision_final
+ * ----------------------
+ * Determina la clase final de una nueva oración
+ * según los K vecinos más cercanos.
+ *
+ * Parámetros:
+ *  - vector_tipos[N_entrenamiento] :
+ *      Clases ordenadas de las frases más cercanas.
+ *  - K :
+ *      Número de vecinos a considerar.
+ *
+ * Retorno:
+ *  - 0 : Clase "La Renga"
+ *  - 1 : Clase "Charly"
+ *  - -1: Empate entre clases
+ ****************************************************/
+
 int decision_final(int vector_tipos[N_entrenamiento] ,int K)
 {
 
@@ -351,6 +585,23 @@ int decision_final(int vector_tipos[N_entrenamiento] ,int K)
     }
 
 }
+
+
+/****************************************************
+ * Función: strstr_custom
+ * ---------------------
+ * Cuenta cuántas veces aparece una palabra completa
+ * dentro de una cadena, considerando mayúsculas y minúsculas.
+ *
+ * Parámetros:
+ *  - cadena[] :
+ *      Texto donde se busca la palabra.
+ *  - palabra[] :
+ *      Palabra a buscar dentro de la cadena.
+ *
+ * Retorno:
+ *  - Número de ocurrencias de la palabra en la cadena.
+ ****************************************************/
 
 int strstr_custom(char cadena[],char palabra[])
 {
@@ -390,6 +641,22 @@ int strstr_custom(char cadena[],char palabra[])
     return ocurrencias;
 }
 
+/****************************************************
+ * Función: calcular_distancia
+ * --------------------------
+ * Calcula la distancia euclidiana entre dos vectores.
+ *
+ * Parámetros:
+ *  - vector1[] :
+ *      Primer vector.
+ *  - vector2[] :
+ *      Segundo vector.
+ *  - dimension :
+ *      Número de elementos en los vectores.
+ *
+ * Retorno:
+ *  - Distancia euclidiana entre vector1 y vector2.
+ ****************************************************/
 
 float calcular_distancia(float vector1[],float vector2[],int dimension)
 {
@@ -402,6 +669,25 @@ float calcular_distancia(float vector1[],float vector2[],int dimension)
     distancia = sqrt(distancia);
     return distancia;
 }
+
+
+/****************************************************
+ * Función: normalizar_vector
+ * --------------------------
+ * Normaliza un vector dividiendo cada componente
+ * por su norma. Si la norma es cero, se aplica
+ * un valor alternativo para evitar que la oración
+ * tenga peso.
+ *
+ * Parámetros:
+ *  - vector[] :
+ *      Vector de características a normalizar.
+ *  - dimension :
+ *      Número de elementos en el vector.
+ *
+ * Retorno:
+ *  - void (no retorna valor).
+ ****************************************************/
 
 void normalizar_vector(float vector[],int dimension)
 {
@@ -424,6 +710,21 @@ void normalizar_vector(float vector[],int dimension)
     }
 }
 
+/****************************************************
+ * Función: calcular_norma
+ * -----------------------
+ * Calcula la norma (longitud) de un vector.
+ *
+ * Parámetros:
+ *  - vector[] :
+ *      Vector de entrada.
+ *  - dimension :
+ *      Número de elementos en el vector.
+ *
+ * Retorno:
+ *  - Norma euclidiana del vector.
+ ****************************************************/
+
 float calcular_norma(float vector[],int dimension)
 {
     float norma = 0;
@@ -434,7 +735,3 @@ float calcular_norma(float vector[],int dimension)
     }
     return sqrt(norma);
 }
-
-
-
-
